@@ -17,25 +17,25 @@ interout=None
 
 ON_POSIX = 'posix' in sys.builtin_module_names
 
-def fstar_reset_hi() :
+def fstar_reset_hi():
     global fstarmatch
     if fstarmatch != None:
         vim.command("call matchdelete("+str(fstarmatch)+")")
     fstarmatch=None
     return
 
-def fstar_add_hi(pos) :
+def fstar_add_hi(pos):
     global fstarmatch
-    if pos >= 1 :
+    if pos >= 1:
         fstarmatch=int(vim.eval("matchadd('FChecked','\\%<"+str(pos+1)+"l')"))
     return
 
-def fstar_update_hi(newpos) :
+def fstar_update_hi(newpos):
     fstar_reset_hi()
     fstar_add_hi(newpos)
     return
 
-def fstar_update_marker(newpos) :
+def fstar_update_marker(newpos):
     vim.command('exe "normal! ' + str(newpos) + 'G1|mv\\<C-o>"')
     return
 
@@ -46,22 +46,22 @@ def fstar_enqueue_output(out, queue):
     queue.put("FAIL")
     out.close()
 
-def fstar_readinter () :
+def fstar_readinter():
     global interout
-    try : line = interout.get_nowait()
-    except Empty :
+    try: line = interout.get_nowait()
+    except Empty:
         return None
-    else :
+    else:
         if line == "FAIL":
             print("end of communication")
             exit(0)
         return line
 
-def fstar_writeinter (s) :
+def fstar_writeinter(s):
     global fst
     fst.stdin.write(s)
 
-def fstar_init () :
+def fstar_init():
     global fst,interout
     fst=Popen(
             [fstarpath,'--in', '--ide', vim.eval('expand(\'%:p\')')],
@@ -74,7 +74,7 @@ def fstar_init () :
     t.daemon=True
     t.start()
 
-def fstar_reset() :
+def fstar_reset():
     global fstarbusy,fstarcurrentline,fstarpotentialline,fstaranswer,fstarupdatehi,fstarmatch
     fstarbusy=0
     fstarcurrentline=0
@@ -86,44 +86,44 @@ def fstar_reset() :
     print('Interaction reset')
 
 
-def fstar_test_code (code,keep,quickcheck=False) :
+def fstar_test_code(code,keep,quickcheck=False):
     global fstarbusy,fst
-    if fstarbusy == 1 :
+    if fstarbusy == 1:
         return 'Already busy'
     fstarbusy = 1
     fstar_writeinter('#push\n')
-    if quickcheck :
+    if quickcheck:
         fstar_writeinter('#set-options "--admit_smt_queries true"\n')
     fstar_writeinter(code)
     fstar_writeinter('\n')
-    if quickcheck :
+    if quickcheck:
         fstar_writeinter('#reset-options\n')
     fstar_writeinter('#end\n')
-    if not keep :
+    if not keep:
         fstar_writeinter('#pop\n')
     return ''
 
-def fstar_convert_answer(ans) :
+def fstar_convert_answer(ans):
     global fstarrequestline
-    res = re.match(r"\<input\>\((\d+)\,(\d+)\-(\d+)\,(\d+)\)\: (.*)",ans)
-    if res == None :
+    res = re.match(r"\<input\>\((\d+)\,(\d+)\-(\d+)\,(\d+)\)\:(.*)",ans)
+    if res == None:
         return ans
-    return '(%d,%s-%d,%s) : %s' % (int(res.group(1))+fstarrequestline-1,res.group(2),int(res.group(3))+fstarrequestline-1,res.group(4),res.group(5))
+    return '(%d,%s-%d,%s): %s' %(int(res.group(1))+fstarrequestline-1,res.group(2),int(res.group(3))+fstarrequestline-1,res.group(4),res.group(5))
 
-def fstar_gather_answer () :
+def fstar_gather_answer():
     global fstarbusy,fst,fstaranswer,fstarpotentialline,fstarcurrentline,fstarupdatehi
-    if fstarbusy == 0 :
+    if fstarbusy == 0:
         return 'No verification pending'
     line=fstar_readinter()
-    while line != None :
-        if line=='ok\n' :
+    while line != None:
+        if line=='ok\n':
             fstarbusy=0
             fstarcurrentline=fstarpotentialline
-            if fstarupdatehi :
+            if fstarupdatehi:
                 fstar_update_hi(fstarcurrentline)
                 fstar_update_marker(fstarcurrentline+1)
             return 'Verification succeeded'
-        if line=='fail\n' :
+        if line=='fail\n':
             fstarbusy=0
             fstarpotentialline=fstarcurrentline
             return fstaranswer
@@ -131,19 +131,19 @@ def fstar_gather_answer () :
         line=fstar_readinter()
     return 'Busy'
 
-def fstar_vim_query_answer () :
+def fstar_vim_query_answer():
     r = fstar_gather_answer()
-    if r != None :
+    if r != None:
         print(r)
 
-def fstar_get_range(firstl,lastl) :
+def fstar_get_range(firstl,lastl):
     lines = vim.eval("getline(%s,%s)"%(firstl,lastl))
     lines = lines + ["\n"]
     code = "\n".join(lines)
     return code
 
 
-def fstar_get_selection () :
+def fstar_get_selection():
     firstl = int(vim.eval("getpos(\"'<\")")[1])
     endl = int(vim.eval("getpos(\"'>\")")[1])
     lines = vim.eval("getline(%d,%d)"%(firstl,endl))
@@ -152,10 +152,10 @@ def fstar_get_selection () :
     return code
 
 
-def fstar_vim_test_code () :
+def fstar_vim_test_code():
     global fstarrequestline, fstaranswer
     global fstarupdatehi
-    if fstarbusy == 1 :
+    if fstarbusy == 1:
         print('Already busy')
         return
     fstaranswer=''
@@ -165,14 +165,14 @@ def fstar_vim_test_code () :
     fstar_test_code(code,False)
     print('Test of selected code launched')
 
-def fstar_vim_until_cursor (quick=False) :
+def fstar_vim_until_cursor(quick=False):
     global fstarcurrentline,fstarpotentialline,fstarrequestline,fstarupdatehi, fstaranswer
-    if fstarbusy == 1 :
+    if fstarbusy == 1:
         print('Already busy')
         return
     fstaranswer = ''
     vimline = int(vim.eval("getpos(\".\")")[1])
-    if vimline <= fstarcurrentline :
+    if vimline <= fstarcurrentline:
         print('Already checked')
         return
     firstl = fstarcurrentline+1
@@ -182,15 +182,15 @@ def fstar_vim_until_cursor (quick=False) :
     fstarpotentialline=endl
     fstarupdatehi=True
     fstar_test_code(code,True,quick)
-    if quick :
+    if quick:
         print('Quick test until this point launched')
-    else :
+    else:
         print('Test until this point launched')
 
-def fstar_vim_get_answer() :
+def fstar_vim_get_answer():
     global fstaranswer
     print(fstaranswer)
 
-def fstar_get_current_line () :
+def fstar_get_current_line():
     global fstarcurrentline
     print(fstarcurrentline)
