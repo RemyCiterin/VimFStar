@@ -105,10 +105,10 @@ def fstar_test_code(code,keep,quickcheck=False):
 
 def fstar_convert_answer(ans):
     global fstarrequestline
-    res = re.match(r"\<input\>\((\d+)\,(\d+)\-(\d+)\,(\d+)\)\:(.*)",ans)
+    res = re.match(r"\<input\>\((\d+)\,(\d+)\-(\d+)\,(\d+)\)\: (.*)",ans)
     if res == None:
         return ans
-    return '(%d,%s-%d,%s): %s' %(int(res.group(1))+fstarrequestline-1,res.group(2),int(res.group(3))+fstarrequestline-1,res.group(4),res.group(5))
+    return '(%d,%s-%d,%s) : %s' % (int(res.group(1))+fstarrequestline-1,res.group(2),int(res.group(3))+fstarrequestline-1,res.group(4),res.group(5))
 
 def fstar_gather_answer():
     global fstarbusy,fst,fstaranswer,fstarpotentialline,fstarcurrentline,fstarupdatehi
