@@ -1,6 +1,7 @@
 import sys
 import re
 import vim
+import subprocess
 from subprocess import PIPE,Popen
 from threading import Thread
 from queue import Queue, Empty
@@ -14,6 +15,7 @@ fstarupdatehi=False
 fstarmatch=None
 fst=None
 interout=None
+intererr=None
 
 ON_POSIX = 'posix' in sys.builtin_module_names
 
@@ -46,6 +48,7 @@ def fstar_enqueue_output(out, queue):
     queue.put("FAIL")
     out.close()
 
+
 def fstar_readinter():
     global interout
     try: line = interout.get_nowait()
@@ -57,22 +60,40 @@ def fstar_readinter():
             exit(0)
         return line
 
+def fstar_empty_intererr():
+    global intererr
+    while True:
+        try: line = intererr.get_nowait()
+        except Empty:
+            return None
+        else:
+            if line == "FAIL":
+                print("end of communication")
+                exit(0)
+            print(line)
+
 def fstar_writeinter(s):
     global fst
     fst.stdin.write(s)
 
 def fstar_init():
-    global fst,interout
+    global fst,interout,intererr
     fst=Popen(
             [fstarpath,'--in', '--ide', vim.eval('expand(\'%:p\')')],
-        stdin=PIPE, stdout=PIPE,
+        stdin=PIPE, stdout=PIPE,stderr=PIPE,
         bufsize=1, text=True,
         close_fds=ON_POSIX
     )
     interout=Queue()
-    t=Thread(target=fstar_enqueue_output,args=(fst.stdout,interout))
-    t.daemon=True
-    t.start()
+    intererr=Queue()
+
+    t_err=Thread(target=fstar_enqueue_output,args=(fst.stderr,intererr))
+    t_err.deamon=True
+    t_err.start()
+
+    t_out=Thread(target=fstar_enqueue_output,args=(fst.stdout,interout))
+    t_out.daemon=True
+    t_out.start()
 
 def fstar_reset():
     global fstarbusy,fstarcurrentline,fstarpotentialline,fstaranswer,fstarupdatehi,fstarmatch
@@ -188,8 +209,9 @@ def fstar_vim_until_cursor(quick=False):
         print('Test until this point launched')
 
 def fstar_vim_get_answer():
-    global fstaranswer
-    print(fstaranswer)
+    #global fstaranswer
+    #print(fstaranswer)
+    fstar_empty_intererr()
 
 def fstar_get_current_line():
     global fstarcurrentline
