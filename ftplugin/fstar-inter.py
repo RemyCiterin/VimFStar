@@ -208,6 +208,7 @@ def fstar_vim_until_cursor(quick=False):
     else:
         print('Test until this point launched')
 
+
 def fstar_vim_get_answer():
     #global fstaranswer
     #print(fstaranswer)
